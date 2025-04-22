@@ -1,2 +1,2 @@
 # MyNovel
-C#
+Asp.net Minimal API + RazorSlices (for C# practice)
