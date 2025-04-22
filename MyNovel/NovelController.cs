@@ -72,7 +72,7 @@ namespace MyNovel
                              </style> ";
             //標題
             web_content += $"<div style='text-align: center;'> <h2>" + db.dbGetBookName(bookID) + "</h2>";
-
+            web_content += $"<a class='btn btn-md btn-primary float-end mb-2' href='../addchapter/{bookID}' role='button'>新增章節內容</a>";
             web_content += "<table class='table table-bordered'> <tbody> ";
             int col_limit = 5; //每5章換行
             for (int r = 0; r < dt.Rows.Count; r++)
