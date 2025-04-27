@@ -1,4 +1,3 @@
-using System.Net;
 using MyNovel;
 
 //[RazorSlices] https://github.com/DamianEdwards/RazorSlices
@@ -21,7 +20,7 @@ app.MapGet("/book/{bookID:int}/{chapterID:int}", (int bookID, int chapterID) => 
     return Results.Content(novel_ctr.getArticle(bookID, chapterID), "text/html");
 });
 
-//cshtml -> build action -> must be content
+//[RazorSlice] cshtml -> build action -> must be content
 app.MapGet("/addbook", () => Results.Extensions.RazorSlice<MyNovel.Slices.AddBook>());
 app.MapPost("/addbook", (HttpRequest request) => {
     return Results.Content(novel_ctr.addBook(request), "text/html");
@@ -36,5 +35,8 @@ app.MapPost("/addchapter/{bookID:int}", (int bookID, HttpRequest request) =>
 {
     return Results.Content(novel_ctr.addChapter(bookID, request), "text/html");
 });
+
+Crawler c = new Crawler();
+c.run();
 
 app.Run();

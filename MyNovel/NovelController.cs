@@ -1,7 +1,4 @@
-﻿using System;
-using System.Data;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using MySqlConnector;
+﻿using System.Data;
 
 namespace MyNovel
 {

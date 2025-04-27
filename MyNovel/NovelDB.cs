@@ -99,6 +99,22 @@ namespace MyNovel
             return "";
         }
 
+        public DataTable dbGetBookUrl(int? bookID = null)
+        {
+            string sql = "";
+            sql  = "SELECT bookID, url FROM book ";
+            sql += (bookID == null) ? "WHERE 1=1 " : $"WHERE bookID={bookID} ";
+            sql += "ORDER BY bookID";
+
+            using (MySqlDataAdapter da = new MySqlDataAdapter(sql, conn))
+            {
+                MySqlCommandBuilder bd = new MySqlCommandBuilder(da);
+                DataTable dt = new DataTable();
+                da.Fill(dt);
+                return dt;
+            }
+        }
+
         public DataTable dbGetChapter(int bookID)
         {
             string sql = $"SELECT chapterID, title FROM chapter WHERE bookID={bookID}";
@@ -147,7 +163,7 @@ namespace MyNovel
             string chapter_id = "";
             string sql;
 
-            sql = $"SELECT max(chapterID)+1 as chapterID FROM chapter WHERE bookID={bookID} LIMIT 1";
+            sql = $"SELECT ifnull(max(chapterID),0)+1 as chapterID FROM chapter WHERE bookID={bookID} LIMIT 1";
             using (MySqlCommand cmd = new MySqlCommand(sql, conn))
             {
                 using (MySqlDataReader reader = cmd.ExecuteReader())
@@ -157,10 +173,6 @@ namespace MyNovel
                         chapter_id = reader.GetInt64("chapterID").ToString();
                     }
                 }
-            }
-            if (chapter_id == "")
-            {
-                chapter_id = "1";
             }
 
             sql = "INSERT INTO chapter(bookID, chapterID, title, content) VALUES (@bookID, @chapterID, @title, @content)";
@@ -173,6 +185,21 @@ namespace MyNovel
 
                 row_cnt = mc.ExecuteNonQuery();
             }
+
+            return row_cnt;
+        }
+
+        public int dbUpdateChapterCnt(int bookID)
+        {
+            int row_cnt = 0;
+            string sql = "UPDATE book A SET ChapterCnt=(SELECT count(*) FROM chapter WHERE bookID=A.bookID)" +
+                         " WHERE bookID=@bookID";
+            using (MySqlCommand mc = new MySqlCommand(sql, conn))
+            {
+                mc.Parameters.AddWithValue("@bookID", bookID);
+                row_cnt = mc.ExecuteNonQuery();
+            }
+
             return row_cnt;
         }
 
