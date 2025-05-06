@@ -1,12 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "W5scvUmXPgs=",
+  "dgSpecHash": "DLnDxnB20lc=",
   "success": true,
   "projectFilePath": "C:\\Users\\undersky\\source\\repos\\MyNovel\\MyNovel\\MyNovel.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\undersky\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.2\\microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
     "C:\\Users\\undersky\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.2\\microsoft.extensions.logging.abstractions.8.0.2.nupkg.sha512",
     "C:\\Users\\undersky\\.nuget\\packages\\mysqlconnector\\2.4.0\\mysqlconnector.2.4.0.nupkg.sha512",
+    "C:\\Users\\undersky\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512",
     "C:\\Users\\undersky\\.nuget\\packages\\razorslices\\0.9.1\\razorslices.0.9.1.nupkg.sha512"
   ],
   "logs": []

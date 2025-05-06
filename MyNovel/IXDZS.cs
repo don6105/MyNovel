@@ -1,55 +1,69 @@
-﻿using System.Data;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 
 namespace MyNovel
 {
-    public class Crawler
+    //愛下電子書
+    public class IXDZS : Parser
     {
-        public void run(int? bookID = null) {
+        const string catalogue_url = "https://ixdzs.tw/novel/clist/";
 
-            NovelDB db = new();
-            DataTable dt = db.dbGetBookUrl(bookID);
+        public override List<Chapter>? step1(string myBookID, string bookURL)
+        {
+            string? target_book_id = getTargetBookID(bookURL);
+            if (target_book_id == null) {
+                return null;
+            }
 
-            string book_id; //目標網站的ID
-            string book_url;
-            string book_name;
-            List<Chapter> chs;
-            //string http_content;
-            for (int r = 0; r < dt.Rows.Count; r++)
+            string http_body;
+            List<Chapter> chs = new();
+            http_body = Task.Run(() => getCatalogue(target_book_id)).Result;
+            JObject json = JObject.Parse(http_body);
+            foreach (var item in json["data"])
             {
-                book_url  = dt.Rows[r]["url"].ToString();
-                book_id   = dt.Rows[r]["bookID"].ToString();
-                book_name = dt.Rows[r]["name"].ToString();
+                Chapter ch = new();
+                ch.my_book_id = int.Parse(myBookID);
+                ch.chapter_id = int.Parse(item["ordernum"].ToString());
+                ch.chapter_url = $"{bookURL}p{item["ordernum"]}.html";
+                chs.Add(ch);
+            }
+            return chs;
+        }
 
-                Downloader dl = new(new IXDZS());
-                EventSubscriber subscriber = new EventSubscriber();
-                Console.WriteLine($"[{book_name}]"); //印出小說名稱
-                subscriber.Subscribe(dl); //訂閱事件:顯示進度條
-                chs = dl.run(book_id, book_url, 20);
+        public override Chapter step2(Chapter ch)
+        {
+            string[] content = parseChapter(ch.chapter_url);
+            ch.title   = content[0];
+            ch.content = content[1];
+            return ch;
+        }
 
-                foreach (var ch in chs)
-                {
-                    if (ch.title.IndexOf("第") > -1 && ch.title.IndexOf("章") > -1)
-                    {
-                        //Console.WriteLine(t.title);
-                        db.dbAddChapter(ch.my_book_id, ch.title, ch.content);
-                    }
-                }
-                db.dbUpdateChapterCnt(int.Parse(book_id));
-                Console.WriteLine("\n");
+        // 由小說網址解析對方的bookID
+        private string? getTargetBookID(string bookURL)
+        {
+            try
+            {
+                string pattern = @"\/([^\/]+)\/$";
+                Match m = Regex.Match(bookURL, pattern);
+                return m.Groups[1].Captures[0].ToString();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("get <book_id> fail: " + ex.Message);
+                return null;
             }
         }
 
-        private static async Task<string> getHttpContent(string url, int bookID)
+        // 取得目錄頁
+        private static async Task<string> getCatalogue(string bookID)
         {
             string result = "";
             try
             {
                 var client = new HttpClient();
-                var request = new HttpRequestMessage(HttpMethod.Post, "https://ixdzs.tw/novel/clist/");
+                var request = new HttpRequestMessage(HttpMethod.Post, catalogue_url);
                 var collection = new List<KeyValuePair<string, string>>();
-                collection.Add(new("bid", bookID.ToString()));
+                collection.Add(new("bid", bookID)); //POST資料
                 var content = new FormUrlEncodedContent(collection);
                 request.Content = content;
                 var response = await client.SendAsync(request);
@@ -64,6 +78,7 @@ namespace MyNovel
             return result;
         }
 
+        // 取得小說內文
         private string[] parseChapter(string chapterUrl)
         {
             string[] chapter = new string[2];
@@ -77,13 +92,14 @@ namespace MyNovel
                 var response = client.GetAsync(chapterUrl).Result;
                 content = response.Content.ReadAsStringAsync().Result;
                 response.EnsureSuccessStatusCode();
-                
+
                 // 取得章節內容
                 step = "[Step.1]";
                 string pattern = @"\/([^\/]+)\/$";
                 p1 = content.IndexOf("<article class=\"page-content\">");
                 p2 = content.LastIndexOf("</article>") + "</article>".Length;
-                if (p1 != -1 && p2 != -1) {
+                if (p1 != -1 && p2 != -1)
+                {
                     content = content.Substring(p1, p2 - p1 + 1);
                 }
 
@@ -95,7 +111,8 @@ namespace MyNovel
 
                 // 去掉<script>語法
                 step = "[Step.3]";
-                do {
+                do
+                {
                     p1 = content.IndexOf("<script");
                     p2 = content.IndexOf("</script>") + "</script>".Length;
                     if (p1 != -1 && p2 != -1)
@@ -109,8 +126,8 @@ namespace MyNovel
                 chapter[1] = content;
                 return chapter;
             }
-            catch (Exception ex) 
-            { 
+            catch (Exception ex)
+            {
                 Console.WriteLine(step + " " + ex.Message);
                 Console.WriteLine(chapterUrl);
                 //Console.WriteLine(result);

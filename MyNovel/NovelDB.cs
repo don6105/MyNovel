@@ -102,7 +102,7 @@ namespace MyNovel
         public DataTable dbGetBookUrl(int? bookID = null)
         {
             string sql = "";
-            sql  = "SELECT bookID, url FROM book ";
+            sql  = "SELECT name, bookID, url FROM book ";
             sql += (bookID == null) ? "WHERE 1=1 " : $"WHERE bookID={bookID} ";
             sql += "ORDER BY bookID";
 

@@ -54,6 +54,10 @@
               "target": "Package",
               "version": "[2.4.0, )"
             },
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.3, )"
+            },
             "RazorSlices": {
               "target": "Package",
               "version": "[0.9.1, )"
