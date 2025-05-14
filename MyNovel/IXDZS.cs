@@ -19,14 +19,21 @@ namespace MyNovel
             List<Chapter> chs = new();
             http_body = Task.Run(() => getCatalogue(target_book_id)).Result;
             JObject json = JObject.Parse(http_body);
-            foreach (var item in json["data"])
-            {
-                Chapter ch = new();
-                ch.my_book_id = int.Parse(myBookID);
-                ch.chapter_id = int.Parse(item["ordernum"].ToString());
-                ch.chapter_url = $"{bookURL}p{item["ordernum"]}.html";
-                chs.Add(ch);
-            }
+
+            object sync = new Object();
+            Parallel.ForEach(json["data"],
+                (item) => 
+                {
+                    Chapter ch = new();
+                    ch.my_book_id = int.Parse(myBookID);
+                    ch.chapter_id = int.Parse(item["ordernum"].ToString());
+                    ch.chapter_url = $"{bookURL}p{item["ordernum"]}.html";
+                    lock (sync)
+                    {
+                        chs.Add(ch);
+                    }
+                });
+
             return chs;
         }
 

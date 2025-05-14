@@ -28,95 +28,12 @@ namespace MyNovel
                 subscriber.Subscribe(dl); //訂閱事件:顯示進度條
                 chs = dl.run(book_id, book_url, 20);
 
-                foreach (var ch in chs)
-                {
-                    if (ch.title.IndexOf("第") > -1 && ch.title.IndexOf("章") > -1)
-                    {
-                        //Console.WriteLine(t.title);
-                        db.dbAddChapter(ch.my_book_id, ch.title, ch.content);
-                    }
-                }
+                db.dbClearChapters(int.Parse(book_id));
+                db.dbAddChapterBulk(int.Parse(book_id), chs.ToArray()); //@@@ Todo:有特殊字元無法整批寫入
                 db.dbUpdateChapterCnt(int.Parse(book_id));
+                
                 Console.WriteLine("\n");
             }
-        }
-
-        private static async Task<string> getHttpContent(string url, int bookID)
-        {
-            string result = "";
-            try
-            {
-                var client = new HttpClient();
-                var request = new HttpRequestMessage(HttpMethod.Post, "https://ixdzs.tw/novel/clist/");
-                var collection = new List<KeyValuePair<string, string>>();
-                collection.Add(new("bid", bookID.ToString()));
-                var content = new FormUrlEncodedContent(collection);
-                request.Content = content;
-                var response = await client.SendAsync(request);
-                response.EnsureSuccessStatusCode();
-                result = await response.Content.ReadAsStringAsync();
-            }
-            catch (HttpRequestException e)
-            {
-                Console.WriteLine("\nException Caught!");
-                Console.WriteLine($"Message: {e.Message} ");
-            }
-            return result;
-        }
-
-        private string[] parseChapter(string chapterUrl)
-        {
-            string[] chapter = new string[2];
-            string step      = "";
-            string title     = "";
-            string content   = "";
-            int p1, p2;
-            try
-            {
-                var client = new HttpClient();
-                var response = client.GetAsync(chapterUrl).Result;
-                content = response.Content.ReadAsStringAsync().Result;
-                response.EnsureSuccessStatusCode();
-                
-                // 取得章節內容
-                step = "[Step.1]";
-                string pattern = @"\/([^\/]+)\/$";
-                p1 = content.IndexOf("<article class=\"page-content\">");
-                p2 = content.LastIndexOf("</article>") + "</article>".Length;
-                if (p1 != -1 && p2 != -1) {
-                    content = content.Substring(p1, p2 - p1 + 1);
-                }
-
-                // 拆出「章節標題」及「內容」
-                step = "[Step.2]";
-                Match m = Regex.Match(content, @"<h3>.+<\/h3>");
-                title = m.Value.Replace("<h3>", "").Replace("</h3>", "");
-                content = content.Replace(m.Value, "");
-
-                // 去掉<script>語法
-                step = "[Step.3]";
-                do {
-                    p1 = content.IndexOf("<script");
-                    p2 = content.IndexOf("</script>") + "</script>".Length;
-                    if (p1 != -1 && p2 != -1)
-                    {
-                        content = content.Remove(p1, p2 - p1 + 1);
-                    }
-                } while (p1 != -1 && p2 != -1);
-
-                step = "[Step.4]";
-                chapter[0] = title;
-                chapter[1] = content;
-                return chapter;
-            }
-            catch (Exception ex) 
-            { 
-                Console.WriteLine(step + " " + ex.Message);
-                Console.WriteLine(chapterUrl);
-                //Console.WriteLine(result);
-                //System.Environment.Exit(1);
-            }
-            return chapter;
         }
     }
 }

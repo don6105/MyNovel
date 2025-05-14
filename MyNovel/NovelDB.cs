@@ -1,6 +1,5 @@
 ﻿using System.Data;
 using MySqlConnector;
-using Microsoft.Extensions.Configuration;
 
 namespace MyNovel
 {
@@ -28,7 +27,8 @@ namespace MyNovel
 
             string connStr = $"server={server};" + $"user={account};" +
                              $"password={password};" + $"database={database};" +
-                             "charset=utf8;";
+                             "charset=utf8;" +
+                             "AllowLoadLocalInfile=true;"; //大量塞資料用
             conn = new MySqlConnection(connStr);
             try
             {
@@ -81,7 +81,7 @@ namespace MyNovel
             }
         }
 
-        public String dbGetBookName(int bookID)
+        public string dbGetBookName(int bookID)
         {
             string sql = $"SELECT name as bookName FROM book WHERE bookID={bookID} LIMIT 1";
 
@@ -157,6 +157,17 @@ namespace MyNovel
             return row_cnt;
         }
 
+        public int dbClearChapters(int bookID)
+        {
+            int row_cnt = 0;
+            string sql = "DELETE FROM chapter WHERE bookID=@bookID";
+            using (MySqlCommand mc = new MySqlCommand(sql, conn))
+            {
+                mc.Parameters.AddWithValue("@bookID", bookID);
+                row_cnt = mc.ExecuteNonQuery();
+            }
+            return row_cnt;
+        }
         public int dbAddChapter(int bookID, string title, string content)
         {
             int row_cnt = 0;
@@ -187,6 +198,52 @@ namespace MyNovel
             }
 
             return row_cnt;
+        }
+
+        public int dbAddChapterBulk(int bookID, Chapter[] chs)
+        {
+            int max_chapter_id = 0;
+            string sql;
+            //取得最大ID
+            sql = $"SELECT ifnull(max(chapterID),0) as chapterID FROM chapter WHERE bookID={bookID} LIMIT 1";
+            using (MySqlCommand cmd = new MySqlCommand(sql, conn))
+            {
+                using (MySqlDataReader reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        max_chapter_id = reader.GetInt32("chapterID");
+                    }
+                }
+            }
+            //轉成DataTable格式
+            DataTable dt = new DataTable();
+            dt.Columns.Add(new DataColumn("bookID"));
+            dt.Columns.Add(new DataColumn("chapterID"));
+            dt.Columns.Add(new DataColumn("title"));
+            dt.Columns.Add(new DataColumn("content"));
+            foreach(var ch in chs) {
+                DataRow r = dt.NewRow();
+                r[0] = bookID;
+                r[1] = ch.chapter_id;
+                r[2] = ch.title;
+                r[3] = ch.content;
+                dt.Rows.Add(r);
+            };
+            //整批寫入MySQL
+            List<MySqlBulkCopyColumnMapping> col_mappings = new List<MySqlBulkCopyColumnMapping>();
+            col_mappings.Add(new MySqlBulkCopyColumnMapping(0, "bookID"));
+            col_mappings.Add(new MySqlBulkCopyColumnMapping(1, "chapterID"));
+            col_mappings.Add(new MySqlBulkCopyColumnMapping(2, "title"));
+            col_mappings.Add(new MySqlBulkCopyColumnMapping(3, "content"));
+            MySqlBulkCopy bulk_copy = new MySqlBulkCopy(conn);// 建立MySqlBulkCopy
+            bulk_copy.DestinationTableName = "chapter"; // 目標Table名稱
+            bulk_copy.ColumnMappings.AddRange(col_mappings);
+            MySqlBulkCopyResult result = bulk_copy.WriteToServer(dt); // dataTable複製到資料庫
+
+            Console.WriteLine($"上傳 {result.RowsInserted} 章");
+
+            return result.RowsInserted;
         }
 
         public int dbUpdateChapterCnt(int bookID)

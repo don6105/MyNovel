@@ -53,7 +53,6 @@
                         chs[idx].assigned = true;
                         cnt++;
                     }
-                    
                 }
             }
             return cnt;
@@ -61,8 +60,11 @@
 
         private int getTodoChapter()
         {
+            if (chs == null) return -1;
+
             for (int i = 0; i < chs.Count; i++)
             {
+                if (chs[i] == null) continue;
                 if (chs[i].assigned == false && chs[i].done == false)
                 {
                     return i;
@@ -73,7 +75,7 @@
 
         private int getFinishedCount()
         {
-            return chs.Where(ch => ch.done).Count();
+            return chs.Where(ch => ch != null && ch.done).Count();
         }
 
         protected void onNotifyEvent(int cnt, int total)
